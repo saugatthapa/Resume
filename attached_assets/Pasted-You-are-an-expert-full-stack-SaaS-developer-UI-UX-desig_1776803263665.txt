@@ -1,0 +1,149 @@
+You are an expert full-stack SaaS developer, UI/UX designer, and SEO specialist.
+
+Build a complete modern web application called "Resume & Career Tools" with freemium model.
+
+---
+
+## 🎯 GOAL:
+Create a clean, fast, mobile-friendly SaaS website that helps users build resumes and generate cover letters, with upgrade to premium features.
+
+---
+
+# 🌐 CORE FEATURES
+
+## 1. Resume Builder
+- Step-by-step form:
+  - Name, contact info
+  - Summary
+  - Skills
+  - Experience
+  - Education
+- Live preview of resume
+- 2–3 free templates
+- Editable sections
+
+---
+
+## 2. Cover Letter Generator
+- Input fields:
+  - Job title
+  - Company name
+  - Skills
+- Generate professional cover letter text
+- Allow copy/download (limited for free users)
+
+---
+
+## 3. AI Resume Tools (Mock AI logic)
+- Resume summary generator
+- Skills suggestion tool
+- Resume headline generator
+
+(Use simple JS logic or placeholder AI responses)
+
+---
+
+# 💎 FREEMIUM MODEL
+
+## Free Plan:
+- Access to basic templates only
+- Max 2 downloads per day
+- Watermark on PDF
+- Limited cover letter generations
+
+## Premium Plan:
+- All templates unlocked
+- Unlimited downloads
+- No watermark
+- Advanced AI suggestions
+- Better formatting
+
+(Add UI for upgrade button, no real payment integration needed)
+
+---
+
+# 🔐 USER SYSTEM
+
+- Login / Signup UI (localStorage-based mock system)
+- Save user resume data locally
+- Track usage limits (downloads per day)
+
+---
+
+# 📄 PDF EXPORT
+
+- Allow users to download resume as PDF
+- Free version adds watermark
+- Premium removes watermark
+
+(Use browser-based PDF generation like jsPDF)
+
+---
+
+# 🎨 UI / UX DESIGN
+
+- Use Tailwind CSS
+- Clean SaaS-style design
+- Dashboard layout after login
+- Sidebar navigation:
+  - Resume Builder
+  - Cover Letter Tool
+  - AI Tools
+- Responsive for mobile
+
+---
+
+# 📈 SEO PAGES (IMPORTANT FOR TRAFFIC)
+
+Create separate landing pages:
+
+- /resume-summary-generator
+- /cover-letter-generator-free
+- /resume-headline-generator
+- /skills-for-resume-generator
+
+Each page must include:
+- SEO title + meta description
+- H1 with keyword
+- 300–500 words helpful content
+- Call-to-action to use tool
+
+---
+
+# ⚡ TECH STACK
+
+- HTML, Tailwind CSS, JavaScript
+- No heavy backend required
+- Use localStorage for saving user data
+
+---
+
+# 💰 MONETIZATION
+
+- Upgrade to premium UI
+- Pricing section:
+  - Free
+  - Pro ($5/month UI only)
+- Add placeholder for ads (optional)
+
+---
+
+# 📁 OUTPUT REQUIREMENTS
+
+Provide:
+
+1. Full working code (HTML, CSS, JS)
+2. Clean folder structure
+3. Instructions to run locally
+4. Instructions to deploy on Vercel
+5. Suggestions to connect real backend later
+
+---
+
+# ⚠️ IMPORTANT RULES
+
+- Code must be beginner-friendly
+- Keep logic simple but functional
+- Focus on UI + usability
+- Avoid unnecessary complexity
+- Everything must work in browser
