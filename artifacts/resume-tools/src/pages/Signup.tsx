@@ -16,9 +16,12 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const submit = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const result = signup(name, email, password);
+    setLoading(true);
+    const result = await signup(name, email, password);
+    setLoading(false);
     if (result.ok) setLocation("/dashboard");
     else setError(result.error);
   };
@@ -58,7 +61,7 @@ export default function Signup() {
                 <div className="text-xs text-muted-foreground mt-1">At least 6 characters.</div>
               </div>
               {error && <div className="text-sm text-destructive" data-testid="text-error">{error}</div>}
-              <Button type="submit" className="w-full" data-testid="button-submit-signup">Create account</Button>
+              <Button type="submit" className="w-full" disabled={loading} data-testid="button-submit-signup">{loading ? "Creating…" : "Create account"}</Button>
             </form>
             <div className="mt-5 text-sm text-muted-foreground text-center">
               Already have an account? <Link href="/login" className="text-foreground font-medium hover:underline">Log in</Link>

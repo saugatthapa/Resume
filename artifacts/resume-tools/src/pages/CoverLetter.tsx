@@ -6,9 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
-import { CoverLetters, Profiles, FREE_COVER_LETTER_LIMIT } from "@/lib/storage";
+import { CoverLetterApi, ProfileApi, FREE_COVER_LETTER_LIMIT } from "@/lib/storage";
 import { generateCoverLetter, TONE_OPTIONS } from "@/lib/ai";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Copy, Download, Sparkles } from "lucide-react";
 import { UpgradeModal } from "@/components/UpgradeModal";
 
@@ -21,14 +21,21 @@ export default function CoverLetter() {
   const [tone, setTone] = useState<typeof TONE_OPTIONS[number]["value"]>("professional");
   const [letter, setLetter] = useState("");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (user) setLetter(CoverLetters.get(user.id));
+    if (!user) return;
+    CoverLetterApi.get().then(({ text }) => setLetter(text)).catch(() => {});
   }, [user]);
+
+  const queueSave = (text: string) => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => { CoverLetterApi.save(text).catch(() => {}); }, 350);
+  };
 
   const isPro = profile?.plan === "pro";
 
-  const onGenerate = () => {
+  const onGenerate = async () => {
     if (!user || !profile) return;
     if (!isPro && profile.coverLettersToday >= FREE_COVER_LETTER_LIMIT) {
       setUpgradeOpen(true);
@@ -39,17 +46,19 @@ export default function CoverLetter() {
       return;
     }
     const text = generateCoverLetter({
-      role,
-      company,
+      role, company,
       skills: skills.split(",").map((s) => s.trim()).filter(Boolean),
-      tone,
-      applicantName: user.name,
+      tone, applicantName: user.name,
     });
     setLetter(text);
-    CoverLetters.set(user.id, text);
-    Profiles.recordCoverLetter(user.id);
-    refresh();
-    toast({ title: "Cover letter ready", description: "Tweak the wording and make it your own." });
+    try {
+      await CoverLetterApi.save(text);
+      await ProfileApi.recordCoverLetter();
+      await refresh();
+      toast({ title: "Cover letter ready", description: "Tweak the wording and make it your own." });
+    } catch (e: any) {
+      toast({ title: "Could not save", description: e?.message, variant: "destructive" });
+    }
   };
 
   const onCopy = async () => {
@@ -78,37 +87,21 @@ export default function CoverLetter() {
       <div className="grid lg:grid-cols-2 gap-6 mt-6">
         <div className="rounded-xl border border-card-border bg-card p-6 space-y-4">
           <div className="grid sm:grid-cols-2 gap-3">
-            <div>
-              <Label>Job title</Label>
-              <Input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Senior Designer" data-testid="input-role" />
-            </div>
-            <div>
-              <Label>Company</Label>
-              <Input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Northwind" data-testid="input-company" />
-            </div>
+            <div><Label>Job title</Label><Input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Senior Designer" data-testid="input-role" /></div>
+            <div><Label>Company</Label><Input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Northwind" data-testid="input-company" /></div>
           </div>
-          <div>
-            <Label>Key skills (comma separated)</Label>
-            <Input value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="design systems, prototyping, user research" data-testid="input-skills" />
-          </div>
+          <div><Label>Key skills (comma separated)</Label><Input value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="design systems, prototyping, user research" data-testid="input-skills" /></div>
           <div>
             <Label className="block mb-2">Tone</Label>
             <div className="flex gap-2">
               {TONE_OPTIONS.map((t) => (
-                <button
-                  key={t.value}
-                  onClick={() => setTone(t.value)}
+                <button key={t.value} onClick={() => setTone(t.value)}
                   className={`px-3 py-1.5 text-sm rounded-md border hover-elevate ${tone === t.value ? "bg-primary text-primary-foreground border-primary" : "border-border"}`}
-                  data-testid={`button-tone-${t.value}`}
-                >
-                  {t.label}
-                </button>
+                  data-testid={`button-tone-${t.value}`}>{t.label}</button>
               ))}
             </div>
           </div>
-          <Button onClick={onGenerate} className="w-full" data-testid="button-generate">
-            <Sparkles className="h-4 w-4 mr-2" />Generate cover letter
-          </Button>
+          <Button onClick={onGenerate} className="w-full" data-testid="button-generate"><Sparkles className="h-4 w-4 mr-2" />Generate cover letter</Button>
           {!isPro && (
             <div className="text-xs text-muted-foreground text-center">
               {Math.max(0, FREE_COVER_LETTER_LIMIT - (profile?.coverLettersToday ?? 0))} of {FREE_COVER_LETTER_LIMIT} free generations left today.
@@ -124,21 +117,16 @@ export default function CoverLetter() {
               <Button variant="outline" size="sm" onClick={onDownload} disabled={!letter} data-testid="button-download-letter"><Download className="h-4 w-4 mr-1" />Download</Button>
             </div>
           </div>
-          <Textarea
-            value={letter}
-            onChange={(e) => { setLetter(e.target.value); if (user) CoverLetters.set(user.id, e.target.value); }}
+          <Textarea value={letter}
+            onChange={(e) => { setLetter(e.target.value); queueSave(e.target.value); }}
             rows={20}
             placeholder="Your generated cover letter will appear here. Edit it to make it sound like you."
             className="font-serif text-base leading-relaxed"
-            data-testid="textarea-letter"
-          />
+            data-testid="textarea-letter" />
         </div>
       </div>
-      <UpgradeModal
-        open={upgradeOpen}
-        onOpenChange={setUpgradeOpen}
-        reason={`Free plan is limited to ${FREE_COVER_LETTER_LIMIT} cover letters per day.`}
-      />
+      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen}
+        reason={`Free plan is limited to ${FREE_COVER_LETTER_LIMIT} cover letters per day.`} />
     </AppShell>
   );
 }

@@ -3,7 +3,7 @@ import { Seo } from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
-import { Profiles, Users } from "@/lib/storage";
+import { ProfileApi, Auth } from "@/lib/storage";
 import { Link } from "wouter";
 import { Shield } from "lucide-react";
 import { useState } from "react";
@@ -18,11 +18,15 @@ export default function Settings() {
   if (!user || !profile) return null;
   const isPro = profile.plan === "pro";
 
-  const downgrade = () => {
+  const downgrade = async () => {
     if (!confirm("Downgrade to the Free plan?")) return;
-    Profiles.downgrade(user.id);
-    refresh();
-    toast({ title: "Switched to Free", description: "You can upgrade again any time." });
+    try {
+      await ProfileApi.downgrade();
+      await refresh();
+      toast({ title: "Switched to Free", description: "You can upgrade again any time." });
+    } catch (e: any) {
+      toast({ title: "Could not downgrade", description: e?.message, variant: "destructive" });
+    }
   };
 
   return (
@@ -96,10 +100,14 @@ export default function Settings() {
             )}
             <Button
               variant={user.isAdmin ? "ghost" : "outline"}
-              onClick={() => {
-                Users.update(user.id, { isAdmin: !user.isAdmin });
-                refresh();
-                toast({ title: user.isAdmin ? "Admin disabled" : "Admin enabled" });
+              onClick={async () => {
+                try {
+                  await Auth.toggleAdmin();
+                  await refresh();
+                  toast({ title: user.isAdmin ? "Admin disabled" : "Admin enabled" });
+                } catch (e: any) {
+                  toast({ title: "Could not toggle admin", description: e?.message, variant: "destructive" });
+                }
               }}
               data-testid="button-toggle-admin"
             >

@@ -13,10 +13,13 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const result = login(email, password);
+    setLoading(true);
+    const result = await login(email, password);
+    setLoading(false);
     if (result.ok) setLocation("/dashboard");
     else setError(result.error);
   };
@@ -32,28 +35,18 @@ export default function Login() {
             <form onSubmit={submit} className="mt-6 space-y-4">
               <div>
                 <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); setError(null); }}
-                  data-testid="input-email"
-                />
+                <Input id="email" type="email" autoComplete="email" value={email}
+                  onChange={(e) => { setEmail(e.target.value); setError(null); }} data-testid="input-email" />
               </div>
               <div>
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => { setPassword(e.target.value); setError(null); }}
-                  data-testid="input-password"
-                />
+                <Input id="password" type="password" autoComplete="current-password" value={password}
+                  onChange={(e) => { setPassword(e.target.value); setError(null); }} data-testid="input-password" />
               </div>
               {error && <div className="text-sm text-destructive" data-testid="text-error">{error}</div>}
-              <Button type="submit" className="w-full" data-testid="button-submit-login">Log in</Button>
+              <Button type="submit" className="w-full" disabled={loading} data-testid="button-submit-login">
+                {loading ? "Signing in…" : "Log in"}
+              </Button>
             </form>
             <div className="mt-6 text-sm text-muted-foreground text-center">
               No account? <Link href="/signup" className="text-foreground font-medium hover:underline">Create one</Link>

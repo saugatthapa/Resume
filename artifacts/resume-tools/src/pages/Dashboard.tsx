@@ -1,18 +1,24 @@
 import { AppShell, UpgradeBanner } from "@/components/AppShell";
 import { Seo } from "@/components/Seo";
 import { useAuth } from "@/lib/auth";
-import { Resumes, FREE_DOWNLOAD_LIMIT, FREE_COVER_LETTER_LIMIT } from "@/lib/storage";
+import { ResumeApi, FREE_DOWNLOAD_LIMIT, FREE_COVER_LETTER_LIMIT, type Resume } from "@/lib/storage";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, FileText, Mail, Sparkles, Download, Crown } from "lucide-react";
+import { ArrowRight, FileText, Mail, Sparkles, Crown } from "lucide-react";
 import { UpgradeModal } from "@/components/UpgradeModal";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function Dashboard() {
   const { user, profile } = useAuth();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [resume, setResume] = useState<Resume | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    ResumeApi.get().then(({ resume }) => setResume(resume)).catch(() => {});
+  }, [user]);
+
   if (!user || !profile) return null;
-  const resume = Resumes.get(user.id);
   const isPro = profile.plan === "pro";
 
   return (
@@ -34,46 +40,25 @@ export default function Dashboard() {
         <UpgradeBanner onUpgrade={() => setUpgradeOpen(true)} />
 
         <div className="grid md:grid-cols-3 gap-4 mt-6">
-          <Stat
-            label="Plan"
-            value={isPro ? "Pro" : "Free"}
-            sub={isPro ? "Unlimited everything" : "Upgrade for more"}
-          />
-          <Stat
-            label="Downloads today"
+          <Stat label="Plan" value={isPro ? "Pro" : "Free"}
+            sub={isPro ? "Unlimited everything" : "Upgrade for more"} />
+          <Stat label="Downloads today"
             value={isPro ? `${profile.downloadsToday}` : `${profile.downloadsToday} / ${FREE_DOWNLOAD_LIMIT}`}
-            sub={isPro ? "No limits" : "Resets at midnight"}
-          />
-          <Stat
-            label="Cover letters today"
+            sub={isPro ? "No limits" : "Resets at midnight"} />
+          <Stat label="Cover letters today"
             value={isPro ? `${profile.coverLettersToday}` : `${profile.coverLettersToday} / ${FREE_COVER_LETTER_LIMIT}`}
-            sub={isPro ? "No limits" : "Resets at midnight"}
-          />
+            sub={isPro ? "No limits" : "Resets at midnight"} />
         </div>
 
         <h2 className="font-serif text-xl font-semibold mt-10 mb-4">Pick up where you left off</h2>
         <div className="grid md:grid-cols-3 gap-4">
-          <ToolCard
-            href="/dashboard/resume"
-            icon={FileText}
-            title="Resume Builder"
+          <ToolCard href="/dashboard/resume" icon={FileText} title="Resume Builder"
             body={resume && resume.experience.length > 0 ? "Continue editing your resume" : "Start building your resume"}
-            cta={resume && resume.experience.length > 0 ? "Continue" : "Get started"}
-          />
-          <ToolCard
-            href="/dashboard/cover-letter"
-            icon={Mail}
-            title="Cover Letter"
-            body="Generate a tailored 3-paragraph letter in seconds"
-            cta="Open"
-          />
-          <ToolCard
-            href="/dashboard/ai-tools"
-            icon={Sparkles}
-            title="AI Tools"
-            body="Summary, headline & skills suggestions"
-            cta="Open"
-          />
+            cta={resume && resume.experience.length > 0 ? "Continue" : "Get started"} />
+          <ToolCard href="/dashboard/cover-letter" icon={Mail} title="Cover Letter"
+            body="Generate a tailored 3-paragraph letter in seconds" cta="Open" />
+          <ToolCard href="/dashboard/ai-tools" icon={Sparkles} title="AI Tools"
+            body="Summary, headline & skills suggestions" cta="Open" />
         </div>
       </div>
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
@@ -91,9 +76,7 @@ function Stat({ label, value, sub }: { label: string; value: string; sub: string
   );
 }
 
-function ToolCard({
-  href, icon: Icon, title, body, cta,
-}: { href: string; icon: any; title: string; body: string; cta: string }) {
+function ToolCard({ href, icon: Icon, title, body, cta }: { href: string; icon: any; title: string; body: string; cta: string }) {
   return (
     <Link href={href}>
       <div className="rounded-xl border border-card-border bg-card p-5 hover-elevate cursor-pointer h-full" data-testid={`card-tool-${title.toLowerCase().replace(/\s+/g, "-")}`}>
