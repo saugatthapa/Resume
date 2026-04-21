@@ -14,6 +14,7 @@ import ResumeBuilder from "@/pages/ResumeBuilder";
 import CoverLetter from "@/pages/CoverLetter";
 import AITools from "@/pages/AITools";
 import Settings from "@/pages/Settings";
+import AdminTemplatesPage from "@/pages/AdminTemplates";
 import SummarySeo from "@/pages/seo/SummarySeo";
 import CoverLetterSeo from "@/pages/seo/CoverLetterSeo";
 import HeadlineSeo from "@/pages/seo/HeadlineSeo";
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/dashboard/cover-letter" component={CoverLetter} />
       <Route path="/dashboard/ai-tools" component={AITools} />
       <Route path="/dashboard/settings" component={Settings} />
+      <Route path="/admin/templates" component={AdminTemplatesPage} />
       <Route component={NotFound} />
     </Switch>
   );

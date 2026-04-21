@@ -1,5 +1,6 @@
 import { forwardRef } from "react";
-import { type Resume } from "@/lib/storage";
+import { type Resume, AdminTemplates } from "@/lib/storage";
+import { renderCustomTemplate } from "@/lib/templateRender";
 
 const formatDate = (s: string) => {
   if (!s) return "";
@@ -18,10 +19,28 @@ export const ResumePreview = forwardRef<HTMLDivElement, { resume: Resume }>(
         {resume.template === "classic" && <Classic resume={resume} />}
         {resume.template === "modern" && <Modern resume={resume} />}
         {resume.template === "minimal" && <Minimal resume={resume} />}
+        {resume.template === "custom" && <Custom resume={resume} />}
       </div>
     );
   },
 );
+
+function Custom({ resume }: { resume: Resume }) {
+  const tpl = resume.customTemplateId ? AdminTemplates.get(resume.customTemplateId) : null;
+  if (!tpl) {
+    return <div style={{ padding: 40, textAlign: "center", color: "#888" }}>This custom template is no longer available. Pick another template.</div>;
+  }
+  const html = renderCustomTemplate(tpl, resume);
+  const scopedCss = `[data-rct-tpl="${tpl.id}"] { ${tpl.css} }`
+    // Scope the CSS to this template's container by prefixing rules. Simple approach: emit raw CSS inside the container scope.
+    .replace(/\}/g, " }");
+  return (
+    <div data-rct-tpl={tpl.id}>
+      <style>{tpl.css}</style>
+      <div dangerouslySetInnerHTML={{ __html: html }} />
+    </div>
+  );
+}
 
 function Header({ resume }: { resume: Resume }) {
   const p = resume.personal;

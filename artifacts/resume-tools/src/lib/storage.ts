@@ -4,6 +4,16 @@ export type User = {
   email: string;
   password: string;
   createdAt: string;
+  isAdmin?: boolean;
+};
+
+export type AdminTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  html: string;
+  css: string;
+  createdAt: string;
 };
 
 export type Session = { userId: string; email: string } | null;
@@ -35,7 +45,8 @@ export type Education = {
 };
 
 export type Resume = {
-  template: "classic" | "modern" | "minimal";
+  template: "classic" | "modern" | "minimal" | "custom";
+  customTemplateId?: string;
   personal: {
     name: string;
     email: string;
@@ -51,6 +62,7 @@ export type Resume = {
 
 const KEY_USERS = "rct.users";
 const KEY_SESSION = "rct.session";
+const KEY_ADMIN_TEMPLATES = "rct.adminTemplates";
 const profileKey = (id: string) => `rct.profile.${id}`;
 const resumeKey = (id: string) => `rct.resume.${id}`;
 const coverLetterKey = (id: string) => `rct.coverLetter.${id}`;
@@ -74,9 +86,30 @@ export const Users = {
     list.push(u);
     write(KEY_USERS, list);
   },
+  update: (id: string, patch: Partial<User>) => {
+    const list = Users.list().map((u) => (u.id === id ? { ...u, ...patch } : u));
+    write(KEY_USERS, list);
+  },
   findByEmail: (email: string) =>
     Users.list().find((u) => u.email.toLowerCase() === email.toLowerCase()) ?? null,
   findById: (id: string) => Users.list().find((u) => u.id === id) ?? null,
+};
+
+export const AdminTemplates = {
+  list: (): AdminTemplate[] => read<AdminTemplate[]>(KEY_ADMIN_TEMPLATES, []),
+  add: (t: AdminTemplate) => {
+    const list = AdminTemplates.list();
+    list.push(t);
+    write(KEY_ADMIN_TEMPLATES, list);
+  },
+  update: (id: string, patch: Partial<AdminTemplate>) => {
+    const list = AdminTemplates.list().map((t) => (t.id === id ? { ...t, ...patch } : t));
+    write(KEY_ADMIN_TEMPLATES, list);
+  },
+  remove: (id: string) => {
+    write(KEY_ADMIN_TEMPLATES, AdminTemplates.list().filter((t) => t.id !== id));
+  },
+  get: (id: string) => AdminTemplates.list().find((t) => t.id === id) ?? null,
 };
 
 export const SessionStore = {

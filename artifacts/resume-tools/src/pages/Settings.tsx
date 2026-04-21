@@ -3,7 +3,9 @@ import { Seo } from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
-import { Profiles } from "@/lib/storage";
+import { Profiles, Users } from "@/lib/storage";
+import { Link } from "wouter";
+import { Shield } from "lucide-react";
 import { useState } from "react";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { useToast } from "@/hooks/use-toast";
@@ -70,6 +72,39 @@ export default function Settings() {
           <div>
             <div className="text-muted-foreground">Cover letters</div>
             <div className="font-serif text-2xl mt-1">{profile.coverLettersToday}{!isPro && " / 3"}</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-card-border bg-card p-6 mt-6">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h2 className="font-serif text-xl font-semibold flex items-center gap-2">
+              <Shield className="h-4 w-4" />Admin access
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {user.isAdmin
+                ? "You can manage premium templates that Pro users can pick from."
+                : "Demo only — toggle admin to manage premium templates."}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            {user.isAdmin && (
+              <Link href="/admin/templates">
+                <Button variant="outline" data-testid="button-open-admin">Open admin</Button>
+              </Link>
+            )}
+            <Button
+              variant={user.isAdmin ? "ghost" : "outline"}
+              onClick={() => {
+                Users.update(user.id, { isAdmin: !user.isAdmin });
+                refresh();
+                toast({ title: user.isAdmin ? "Admin disabled" : "Admin enabled" });
+              }}
+              data-testid="button-toggle-admin"
+            >
+              {user.isAdmin ? "Turn off admin" : "Become admin"}
+            </Button>
           </div>
         </div>
       </div>

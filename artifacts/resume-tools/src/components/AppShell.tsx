@@ -5,16 +5,17 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  LayoutDashboard, FileText, Mail, Sparkles, Settings as SettingsIcon, LogOut, Menu, X,
+  LayoutDashboard, FileText, Mail, Sparkles, Settings as SettingsIcon, LogOut, Menu, X, Shield,
 } from "lucide-react";
 
-const ITEMS = [
+const BASE_ITEMS = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/resume", label: "Resume Builder", icon: FileText },
   { href: "/dashboard/cover-letter", label: "Cover Letter", icon: Mail },
   { href: "/dashboard/ai-tools", label: "AI Tools", icon: Sparkles },
   { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
 ];
+const ADMIN_ITEM = { href: "/admin/templates", label: "Premium Templates", icon: Shield };
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { session, user, profile, logout } = useAuth();
@@ -23,6 +24,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   if (!session || !user) return <Redirect to="/login" />;
 
+  const items = user.isAdmin ? [...BASE_ITEMS, ADMIN_ITEM] : BASE_ITEMS;
   const isActive = (href: string) =>
     href === "/dashboard" ? location === "/dashboard" : location.startsWith(href);
 
@@ -51,7 +53,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
         <nav className="px-3 py-4 flex-1 flex flex-col gap-1">
-          {ITEMS.map((it) => {
+          {items.map((it) => {
             const Icon = it.icon;
             const active = isActive(it.href);
             return (
@@ -93,7 +95,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
         {open && (
           <div className="border-t border-sidebar-border px-3 py-3 flex flex-col gap-1">
-            {ITEMS.map((it) => {
+            {items.map((it) => {
               const Icon = it.icon;
               return (
                 <Link

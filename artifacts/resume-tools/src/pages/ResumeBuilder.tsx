@@ -10,8 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import {
-  Resumes, Profiles, emptyResume, newId, FREE_DOWNLOAD_LIMIT,
-  type Resume, type Experience, type Education,
+  Resumes, Profiles, AdminTemplates as TplStore, emptyResume, newId, FREE_DOWNLOAD_LIMIT,
+  type Resume, type Experience, type Education, type AdminTemplate,
 } from "@/lib/storage";
 import { generateSummary } from "@/lib/ai";
 import { exportElementToPdf } from "@/lib/pdf";
@@ -26,6 +26,7 @@ export default function ResumeBuilder() {
   const { toast } = useToast();
   const previewRef = useRef<HTMLDivElement>(null);
   const [resume, setResume] = useState<Resume | null>(null);
+  const [premiumTemplates, setPremiumTemplates] = useState<AdminTemplate[]>([]);
   const [step, setStep] = useState<Step>("Personal");
   const [skillDraft, setSkillDraft] = useState("");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
@@ -36,6 +37,7 @@ export default function ResumeBuilder() {
     if (!user) return;
     const r = Resumes.get(user.id) ?? emptyResume(user.name, user.email);
     setResume(r);
+    setPremiumTemplates(TplStore.list());
   }, [user]);
 
   // Autosave
@@ -92,13 +94,13 @@ export default function ResumeBuilder() {
 
   const stepIndex = STEPS.indexOf(step);
 
-  const pickTemplate = (t: Resume["template"]) => {
+  const pickTemplate = (t: Resume["template"], customId?: string) => {
     if (!isPro && t !== "classic") {
-      setUpgradeReason("Modern and Minimal templates are part of Pro.");
+      setUpgradeReason(t === "custom" ? "Premium templates are part of Pro." : "Modern and Minimal templates are part of Pro.");
       setUpgradeOpen(true);
       return;
     }
-    update({ template: t });
+    update({ template: t, customTemplateId: customId });
   };
 
   const onDownload = async () => {
@@ -164,6 +166,34 @@ export default function ResumeBuilder() {
                 );
               })}
             </div>
+            {premiumTemplates.length > 0 && (
+              <>
+                <div className="flex items-center gap-2 mt-4 mb-2">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Premium</div>
+                  <div className="text-[10px] px-1.5 py-0.5 rounded bg-accent/15 text-accent font-medium">Pro</div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {premiumTemplates.map((t) => {
+                    const locked = !isPro;
+                    const active = resume.template === "custom" && resume.customTemplateId === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => pickTemplate("custom", t.id)}
+                        className={`relative rounded-lg border p-3 text-left text-xs hover-elevate ${active ? "border-primary ring-1 ring-primary" : "border-border"}`}
+                        data-testid={`button-template-custom-${t.id}`}
+                      >
+                        <div className="font-medium truncate">{t.name}</div>
+                        <div className="text-muted-foreground mt-0.5 line-clamp-1">{t.description || "Premium template"}</div>
+                        {locked && <Lock className="h-3.5 w-3.5 absolute top-2 right-2 text-muted-foreground" />}
+                        {active && <Check className="h-3.5 w-3.5 absolute top-2 right-2 text-primary" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Step nav */}

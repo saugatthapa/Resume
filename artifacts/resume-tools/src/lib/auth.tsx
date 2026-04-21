@@ -41,12 +41,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!/^\S+@\S+\.\S+$/.test(email)) return { ok: false, error: "Enter a valid email." };
     if (password.length < 6) return { ok: false, error: "Password must be at least 6 characters." };
     if (Users.findByEmail(email)) return { ok: false, error: "An account with that email already exists." };
+    const isFirstUser = Users.list().length === 0;
     const u: User = {
       id: newId(),
       name: name.trim(),
       email: email.trim(),
       password,
       createdAt: new Date().toISOString(),
+      isAdmin: isFirstUser,
     };
     Users.add(u);
     Profiles.set(u.id, {
