@@ -9,7 +9,7 @@ Freemium SaaS (Free $0 vs Pro $5/mo) with resume builder (3 templates + admin-up
 - **DB**: Postgres via Drizzle ORM. Schema lives at `lib/db/src/schema/index.ts`. Run `pnpm --filter @workspace/db push` to sync.
 - **Payments**: Real PayPal — `@paypal/react-paypal-js` on the client, `@paypal/checkout-server-sdk` on the server. `$5.00 USD` one-time → 30 days of Pro. `PAYPAL_MODE=live` flips from sandbox to production.
 - **Dev**: Vite + Express run together via `concurrently` (`pnpm --filter @workspace/resume-tools run dev`). Vite proxies `/api` → `localhost:5174`.
-- **Vercel**: `artifacts/resume-tools/api/[...path].ts` wraps the Express app as a serverless function; `vercel.json` rewrites `/api/(.*)` to it. The Vite build is the static frontend.
+- **Vercel**: repo-root `vercel.json` builds the monorepo and rewrites `/api/*` to `api/index.ts`, which wraps the Express app from `artifacts/resume-tools/server/app.ts` as a single serverless function. Static frontend output is `artifacts/resume-tools/dist/public`.
 
 ## Routes
 
@@ -58,14 +58,35 @@ Vercel deployment (set under Project → Settings → Environment Variables):
 - `artifacts/resume-tools/server/auth.ts` — bcrypt + cookie session middleware
 - `artifacts/resume-tools/server/paypal.ts` — PayPal SDK client + create/capture helpers
 - `artifacts/resume-tools/server/dev.ts` — local dev server entry (port 5174)
-- `artifacts/resume-tools/api/[...path].ts` — Vercel serverless wrapper
-- `artifacts/resume-tools/vercel.json` — Vercel rewrites
+- `api/index.ts` — Vercel serverless wrapper (root)
+- `vercel.json` — Vercel build + rewrites (root)
 - `artifacts/resume-tools/src/lib/storage.ts` — typed `fetch` API client (Auth, ProfileApi, ResumeApi, CoverLetterApi, AdminTemplatesApi, PayPalApi)
 - `artifacts/resume-tools/src/lib/auth.tsx` — async `AuthProvider` backed by `/api/auth/*`
 - `artifacts/resume-tools/src/components/UpgradeModal.tsx` — real PayPal Buttons (PayPal balance + Credit/Debit cards via card funding)
 - `artifacts/resume-tools/src/components/ResumePreview.tsx` — Classic / Modern / Minimal + admin custom templates (passed as a prop)
 - `artifacts/resume-tools/src/pages/ResumeBuilder.tsx` — main builder, async load + debounced autosave
 - `artifacts/resume-tools/src/pages/AdminTemplates.tsx` — admin CRUD over `/api/admin/templates`
+
+## Deploying to GitHub + Vercel
+
+1. **Push to GitHub** (from a shell with git auth):
+   ```bash
+   git remote add origin git@github.com:<you>/<repo>.git
+   git add -A && git commit -m "Resume & Career Tools"
+   git push -u origin main
+   ```
+2. **Create a Vercel project** at https://vercel.com/new and import the GitHub repo.
+3. **Project settings** (most are picked up from `vercel.json`):
+   - Framework preset: **Other**
+   - Root directory: **repo root** (do not set to `artifacts/resume-tools`)
+   - Build/Install/Output: leave blank — `vercel.json` provides them.
+4. **Environment variables** (Production + Preview):
+   - `DATABASE_URL` — a Vercel Postgres / Neon / Supabase pooler URL.
+   - `SESSION_SECRET` — random 32+ chars.
+   - `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` — from your PayPal app.
+   - `PAYPAL_MODE` — `live` for production, `sandbox` for previews.
+5. **Deploy.** First build runs `pnpm --filter @workspace/db push` to create tables, then builds the frontend.
+6. **Custom domain** (optional): add it in Vercel → Domains.
 
 ## Design
 

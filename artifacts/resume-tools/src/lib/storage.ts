@@ -79,8 +79,16 @@ export function newId(): string {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 }
 
+// Resolve API URL under the artifact's base path so requests don't escape into
+// other artifacts that own `/api` at the workspace level. On Vercel the base
+// is `/` so this becomes plain `/api/...`.
+function apiUrl(path: string): string {
+  const base = (import.meta.env.BASE_URL ?? "/").replace(/\/+$/, "/");
+  return `${base}${path.replace(/^\/+/, "")}`;
+}
+
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, {
+  const res = await fetch(apiUrl(path), {
     credentials: "include",
     headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
     ...init,

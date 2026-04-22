@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm install --no-frozen-lockfile && pnpm --filter @workspace/db push && pnpm --filter @workspace/resume-tools build",
+  "outputDirectory": "artifacts/resume-tools/dist/public",
+  "installCommand": "echo skipping default install",
+  "framework": null,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/api", "destination": "/api/index" }
+  ]
+}

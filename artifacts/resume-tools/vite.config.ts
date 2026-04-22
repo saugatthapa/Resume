@@ -67,6 +67,14 @@ export default defineConfig({
       strict: true,
     },
     proxy: {
+      // Match the artifact-scoped path used by the client so `/{base}/api/*`
+      // is forwarded to the local Express dev server as `/api/*`.
+      [`${basePath.replace(/\/+$/, "")}/api`]: {
+        target: `http://localhost:${process.env.SERVER_PORT ?? 5174}`,
+        changeOrigin: false,
+        rewrite: (p) => p.replace(basePath.replace(/\/+$/, ""), ""),
+      },
+      // Fallback for direct access without the artifact prefix.
       "/api": {
         target: `http://localhost:${process.env.SERVER_PORT ?? 5174}`,
         changeOrigin: false,

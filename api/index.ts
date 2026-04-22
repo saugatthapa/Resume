@@ -1,4 +1,4 @@
-import { createApp } from "../server/app";
+import { createApp } from "../artifacts/resume-tools/server/app";
 
 const app = createApp();
 
