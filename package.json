@@ -9,7 +9,7 @@
     "vercel-build": "pnpm run build",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "db:push": "drizzle-kit push --config ./server/db/drizzle.config.ts",
+    "db:push": "drizzle-kit push --config ./drizzle.config.ts",
     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'"
   },
   "devDependencies": {
