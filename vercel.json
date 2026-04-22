@@ -1,4 +1,5 @@
 {
+  "outputDirectory": "artifacts/resume-tools/dist/public",
   "builds": [
     {
       "src": "artifacts/resume-tools/dist/public/**",
