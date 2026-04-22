@@ -1,6 +1,10 @@
 [build]
-  command = "npm run build"
+  command = "npx --yes pnpm@9.15.0 install --no-frozen-lockfile && npx --yes pnpm@9.15.0 run build"
   publish = "dist"
+  functions = "netlify/functions"
+
+[build.environment]
+  NPM_FLAGS = "--version"
 
 [[redirects]]
   from = "/api/*"
