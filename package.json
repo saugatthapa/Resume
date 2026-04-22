@@ -96,6 +96,8 @@
     "@vercel/postgres": "^0.8.0",
     "drizzle-orm": "catalog:",
     "drizzle-zod": "^0.8.3",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "serverless-http": "^3.2.0",
+    "@netlify/functions": "^2.6.0"
   }
 }
