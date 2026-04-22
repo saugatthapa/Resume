@@ -1,74 +1,74 @@
 # Resume & Career Tools
 
-A freemium SaaS web app for building resumes, writing cover letters, and polishing
-your professional brand. Frontend-only (React + Vite), backed entirely by
-localStorage — no backend, no API hooks, no codegen.
+Freemium SaaS (Free $0 vs Pro $5/mo) with resume builder (3 templates + admin-uploaded premium templates + PDF export), cover letter generator, AI tools, SEO landing pages, and an admin panel.
 
 ## Stack
 
-- React + Vite + TypeScript
-- Tailwind v4 with shadcn-style UI primitives (`src/components/ui/*`)
-- wouter (router)
-- react-helmet-async (per-page SEO + OG tags)
-- jspdf + html2canvas (PDF export)
-
-## Brand & design
-
-- Warm cream background (`hsl 36 38% 97%`), deep forest green primary
-  (`hsl 158 42% 26%`), terracotta accent (`hsl 16 64% 56%`).
-- Fraunces serif for headings, Inter sans for body.
-- No emojis anywhere in the UI.
+- **Frontend**: Vite + React + TypeScript + Tailwind + shadcn/ui (`artifacts/resume-tools/src`)
+- **Backend**: Express (cookie sessions + bcrypt) under `artifacts/resume-tools/server`
+- **DB**: Postgres via Drizzle ORM. Schema lives at `lib/db/src/schema/index.ts`. Run `pnpm --filter @workspace/db push` to sync.
+- **Payments**: Real PayPal — `@paypal/react-paypal-js` on the client, `@paypal/checkout-server-sdk` on the server. `$5.00 USD` one-time → 30 days of Pro. `PAYPAL_MODE=live` flips from sandbox to production.
+- **Dev**: Vite + Express run together via `concurrently` (`pnpm --filter @workspace/resume-tools run dev`). Vite proxies `/api` → `localhost:5174`.
+- **Vercel**: `artifacts/resume-tools/api/[...path].ts` wraps the Express app as a serverless function; `vercel.json` rewrites `/api/(.*)` to it. The Vite build is the static frontend.
 
 ## Routes
 
-Marketing (public):
-- `/` Landing
-- `/pricing`
-- `/login`, `/signup`
-- `/resume-summary-generator`, `/cover-letter-generator-free`,
-  `/resume-headline-generator`, `/skills-for-resume-generator` — SEO landing
-  pages with embedded mini-tools and 300–500 words of real career advice.
+Public: `/`, `/pricing`, `/summary-tool`, `/cover-letter-generator`, `/headline-generator`, `/skills-generator`, `/login`, `/signup`.
 
-App (mock auth — redirects to `/login` if no session):
-- `/dashboard`
-- `/dashboard/resume` — multi-step builder + live preview + PDF export
-- `/dashboard/cover-letter`
-- `/dashboard/ai-tools`
-- `/dashboard/settings`
+Authed: `/dashboard`, `/dashboard/resume`, `/dashboard/cover-letter`, `/dashboard/ai-tools`, `/dashboard/settings`, `/dashboard/admin/templates` (admin only).
 
-## localStorage keys
+## API (Express)
 
-- `rct.users` — array of mock users
-- `rct.session` — `{ userId, email } | null`
-- `rct.profile.<userId>` — `{ plan, downloadsToday, downloadsResetAt, coverLettersToday }`
-- `rct.resume.<userId>` — full resume document
-- `rct.coverLetter.<userId>` — last generated cover letter text
+- `POST /api/auth/signup`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`
+- `POST /api/profile/record-download`, `POST /api/profile/record-cover-letter`, `POST /api/profile/downgrade`, `POST /api/profile/toggle-admin`
+- `GET /api/resume`, `PUT /api/resume`
+- `GET /api/cover-letter`, `PUT /api/cover-letter`
+- `GET /api/admin/templates`, `POST /api/admin/templates`, `PUT /api/admin/templates/:id`, `DELETE /api/admin/templates/:id` (admin only)
+- `GET /api/paypal/config`, `POST /api/paypal/orders`, `POST /api/paypal/orders/:id/capture`
 
-Daily counters auto-reset on profile fetch when `downloadsResetAt` falls behind today.
+Session cookie: `rct_session`, httpOnly, 30d TTL. In production: `secure` + `sameSite=none`.
 
 ## Free vs Pro
 
-Free:
-- Classic template only
-- 2 PDF downloads / day, 3 cover letters / day
-- Watermark on exported PDFs
-- "Upgrade for advanced suggestions" footer in AI tools
+Free: Classic template only · 2 PDF downloads/day · 3 cover letters/day · watermark on PDFs.
+Pro ($5 / 30 days): all 3 templates + admin premium templates · unlimited downloads + cover letters · no watermark · richer AI suggestions.
 
-Pro ($5/mo, simulated upgrade):
-- All 3 templates (Classic, Modern, Minimal)
-- Unlimited downloads + cover letters
-- No watermark
-- Slightly richer AI summaries
+Plan auto-downgrades to Free in `ensureFreshProfile` once `proUntil < now`.
 
-Upgrades are UI-only — `Profiles.upgrade(userId)` flips a localStorage flag.
+## Required environment variables
+
+Local dev (.env at repo root or `artifacts/resume-tools/.env`):
+- `DATABASE_URL` — Postgres connection string (provided by Replit)
+- `SESSION_SECRET` — random 32+ char string
+- `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` — PayPal app credentials
+- `PAYPAL_MODE` — `sandbox` (default) or `live`
+
+Vercel deployment (set under Project → Settings → Environment Variables):
+- `DATABASE_URL`
+- `SESSION_SECRET`
+- `PAYPAL_CLIENT_ID`
+- `PAYPAL_CLIENT_SECRET`
+- `PAYPAL_MODE` = `live` for production
+- `NODE_ENV` = `production` (Vercel sets this automatically)
 
 ## Key files
 
-- `src/lib/storage.ts` — localStorage models + daily-reset logic
-- `src/lib/auth.tsx` — mock signup/login + AuthProvider
-- `src/lib/ai.ts` — deterministic summary / headline / cover letter / skills generators
-- `src/lib/pdf.ts` — html2canvas → jsPDF, with watermark for free users
-- `src/components/ResumePreview.tsx` — Classic / Modern / Minimal templates
-- `src/components/AppShell.tsx`, `MarketingShell.tsx` — layouts
-- `src/components/UpgradeModal.tsx` — upgrade flow modal
-- `src/pages/ResumeBuilder.tsx` — main builder (steps + autosave + export)
+- `lib/db/src/schema/index.ts` — Drizzle schema (users, sessions, profiles, resumes, coverLetters, adminTemplates, payments)
+- `artifacts/resume-tools/server/app.ts` — Express routes
+- `artifacts/resume-tools/server/auth.ts` — bcrypt + cookie session middleware
+- `artifacts/resume-tools/server/paypal.ts` — PayPal SDK client + create/capture helpers
+- `artifacts/resume-tools/server/dev.ts` — local dev server entry (port 5174)
+- `artifacts/resume-tools/api/[...path].ts` — Vercel serverless wrapper
+- `artifacts/resume-tools/vercel.json` — Vercel rewrites
+- `artifacts/resume-tools/src/lib/storage.ts` — typed `fetch` API client (Auth, ProfileApi, ResumeApi, CoverLetterApi, AdminTemplatesApi, PayPalApi)
+- `artifacts/resume-tools/src/lib/auth.tsx` — async `AuthProvider` backed by `/api/auth/*`
+- `artifacts/resume-tools/src/components/UpgradeModal.tsx` — real PayPal Buttons (PayPal balance + Credit/Debit cards via card funding)
+- `artifacts/resume-tools/src/components/ResumePreview.tsx` — Classic / Modern / Minimal + admin custom templates (passed as a prop)
+- `artifacts/resume-tools/src/pages/ResumeBuilder.tsx` — main builder, async load + debounced autosave
+- `artifacts/resume-tools/src/pages/AdminTemplates.tsx` — admin CRUD over `/api/admin/templates`
+
+## Design
+
+- Palette: forest green (#1F4D3F), terracotta accent, cream paper. PayPal blue (#003087 / #0070BA) on checkout.
+- Type: Fraunces (serif headings) + Inter (UI).
+- No emojis in UI copy.

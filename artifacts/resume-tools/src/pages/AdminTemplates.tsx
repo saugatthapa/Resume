@@ -8,11 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
-import {
-  AdminTemplates as TplStore, newId, type AdminTemplate, emptyResume,
-} from "@/lib/storage";
+import { AdminTemplatesApi, type AdminTemplate, emptyResume } from "@/lib/storage";
 import { STARTER_TEMPLATE_HTML, STARTER_TEMPLATE_CSS, renderCustomTemplate } from "@/lib/templateRender";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Redirect } from "wouter";
 import { Plus, Trash2, Eye, Pencil, Save, Sparkles } from "lucide-react";
 
@@ -31,49 +29,71 @@ const SAMPLE_RESUME = (() => {
   return r;
 })();
 
+type Draft = {
+  id: string | null;
+  name: string;
+  description: string;
+  html: string;
+  css: string;
+};
+
 export default function AdminTemplatesPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [list, setList] = useState<AdminTemplate[]>([]);
-  const [editing, setEditing] = useState<AdminTemplate | null>(null);
+  const [editing, setEditing] = useState<Draft | null>(null);
   const [previewing, setPreviewing] = useState<AdminTemplate | null>(null);
 
-  useEffect(() => setList(TplStore.list()), []);
+  const refresh = async () => {
+    try {
+      const { templates } = await AdminTemplatesApi.list();
+      setList(templates);
+    } catch (e: any) {
+      toast({ title: "Could not load templates", description: e?.message, variant: "destructive" });
+    }
+  };
+
+  useEffect(() => { void refresh(); }, []);
 
   if (!user) return <Redirect to="/login" />;
   if (!user.isAdmin) return <Redirect to="/dashboard" />;
 
-  const refresh = () => setList(TplStore.list());
-
   const startNew = () => {
     setEditing({
-      id: newId(),
+      id: null,
       name: "New premium template",
       description: "",
       html: STARTER_TEMPLATE_HTML,
       css: STARTER_TEMPLATE_CSS,
-      createdAt: new Date().toISOString(),
     });
   };
 
-  const remove = (id: string) => {
+  const remove = async (id: string) => {
     if (!confirm("Delete this template? Resumes already using it will fall back to Classic.")) return;
-    TplStore.remove(id);
-    refresh();
-    toast({ title: "Template deleted" });
+    try {
+      await AdminTemplatesApi.remove(id);
+      await refresh();
+      toast({ title: "Template deleted" });
+    } catch (e: any) {
+      toast({ title: "Delete failed", description: e?.message, variant: "destructive" });
+    }
   };
 
-  const save = (t: AdminTemplate) => {
-    if (!t.name.trim()) {
-      toast({ title: "Add a name", variant: "destructive" });
-      return;
+  const save = async (t: Draft) => {
+    if (!t.name.trim()) { toast({ title: "Add a name", variant: "destructive" }); return; }
+    if (!t.html.trim()) { toast({ title: "HTML can't be empty", variant: "destructive" }); return; }
+    try {
+      if (t.id) {
+        await AdminTemplatesApi.update(t.id, { name: t.name, description: t.description, html: t.html, css: t.css });
+      } else {
+        await AdminTemplatesApi.create({ name: t.name, description: t.description, html: t.html, css: t.css });
+      }
+      await refresh();
+      setEditing(null);
+      toast({ title: "Template saved", description: "Pro users will see it in the resume builder." });
+    } catch (e: any) {
+      toast({ title: "Save failed", description: e?.message, variant: "destructive" });
     }
-    const exists = TplStore.get(t.id);
-    if (exists) TplStore.update(t.id, t);
-    else TplStore.add(t);
-    refresh();
-    setEditing(null);
-    toast({ title: "Template saved", description: "Pro users will see it in the resume builder." });
   };
 
   return (
@@ -123,7 +143,9 @@ export default function AdminTemplatesPage() {
                   <Button variant="outline" size="sm" onClick={() => setPreviewing(t)} className="flex-1" data-testid={`button-preview-${t.id}`}>
                     <Eye className="h-3.5 w-3.5 mr-1" />Preview
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => setEditing(t)} className="flex-1" data-testid={`button-edit-${t.id}`}>
+                  <Button variant="outline" size="sm"
+                    onClick={() => setEditing({ id: t.id, name: t.name, description: t.description, html: t.html, css: t.css })}
+                    className="flex-1" data-testid={`button-edit-${t.id}`}>
                     <Pencil className="h-3.5 w-3.5 mr-1" />Edit
                   </Button>
                   <Button variant="ghost" size="icon" onClick={() => remove(t.id)} aria-label="Delete" data-testid={`button-delete-${t.id}`}>
@@ -136,7 +158,7 @@ export default function AdminTemplatesPage() {
         </div>
       )}
 
-      {editing && <EditorDialog template={editing} onClose={() => setEditing(null)} onSave={save} />}
+      {editing && <EditorDialog draft={editing} onClose={() => setEditing(null)} onSave={save} />}
       {previewing && (
         <Dialog open onOpenChange={(o) => !o && setPreviewing(null)}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
@@ -155,8 +177,8 @@ export default function AdminTemplatesPage() {
   );
 }
 
-function TemplateThumb({ template }: { template: AdminTemplate }) {
-  const html = useMemo(() => renderCustomTemplate(template, SAMPLE_RESUME), [template]);
+function TemplateThumb({ template }: { template: { id: string; html: string; css: string } }) {
+  const html = useMemo(() => renderCustomTemplate(template as any, SAMPLE_RESUME), [template]);
   return (
     <div data-rct-tpl={template.id}>
       <style>{template.css}</style>
@@ -165,20 +187,20 @@ function TemplateThumb({ template }: { template: AdminTemplate }) {
   );
 }
 
-function EditorDialog({
-  template, onClose, onSave,
-}: {
-  template: AdminTemplate; onClose: () => void; onSave: (t: AdminTemplate) => void;
-}) {
-  const [draft, setDraft] = useState<AdminTemplate>(template);
+function EditorDialog({ draft: initial, onClose, onSave }: { draft: Draft; onClose: () => void; onSave: (t: Draft) => void; }) {
+  const [draft, setDraft] = useState<Draft>(initial);
   const [tab, setTab] = useState<"html" | "css">("html");
-  const html = useMemo(() => renderCustomTemplate(draft, SAMPLE_RESUME), [draft]);
+  const previewKey = draft.id ?? "new-draft";
+  const html = useMemo(
+    () => renderCustomTemplate({ id: previewKey, name: draft.name, description: draft.description, html: draft.html, css: draft.css, createdAt: "" } as any, SAMPLE_RESUME),
+    [draft, previewKey],
+  );
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-6xl max-h-[92vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="font-serif">Edit premium template</DialogTitle>
+          <DialogTitle className="font-serif">{draft.id ? "Edit premium template" : "New premium template"}</DialogTitle>
         </DialogHeader>
         <div className="grid lg:grid-cols-2 gap-4 overflow-hidden flex-1 min-h-0">
           <div className="flex flex-col gap-3 min-h-0">
@@ -194,31 +216,17 @@ function EditorDialog({
             </div>
             <div>
               <div className="flex gap-1 mb-2">
-                <button
-                  onClick={() => setTab("html")}
-                  className={`px-3 py-1.5 text-xs rounded-md hover-elevate ${tab === "html" ? "bg-primary text-primary-foreground" : "bg-secondary"}`}
-                >HTML</button>
-                <button
-                  onClick={() => setTab("css")}
-                  className={`px-3 py-1.5 text-xs rounded-md hover-elevate ${tab === "css" ? "bg-primary text-primary-foreground" : "bg-secondary"}`}
-                >CSS</button>
+                <button onClick={() => setTab("html")}
+                  className={`px-3 py-1.5 text-xs rounded-md hover-elevate ${tab === "html" ? "bg-primary text-primary-foreground" : "bg-secondary"}`}>HTML</button>
+                <button onClick={() => setTab("css")}
+                  className={`px-3 py-1.5 text-xs rounded-md hover-elevate ${tab === "css" ? "bg-primary text-primary-foreground" : "bg-secondary"}`}>CSS</button>
               </div>
               {tab === "html" ? (
-                <Textarea
-                  rows={18}
-                  value={draft.html}
-                  onChange={(e) => setDraft({ ...draft, html: e.target.value })}
-                  className="font-mono text-xs"
-                  data-testid="textarea-html"
-                />
+                <Textarea rows={18} value={draft.html} onChange={(e) => setDraft({ ...draft, html: e.target.value })}
+                  className="font-mono text-xs" data-testid="textarea-html" />
               ) : (
-                <Textarea
-                  rows={18}
-                  value={draft.css}
-                  onChange={(e) => setDraft({ ...draft, css: e.target.value })}
-                  className="font-mono text-xs"
-                  data-testid="textarea-css"
-                />
+                <Textarea rows={18} value={draft.css} onChange={(e) => setDraft({ ...draft, css: e.target.value })}
+                  className="font-mono text-xs" data-testid="textarea-css" />
               )}
               <p className="text-xs text-muted-foreground mt-2">
                 Available placeholders: <code>{"{{name}}"}</code>, <code>{"{{email}}"}</code>, <code>{"{{phone}}"}</code>,{" "}
@@ -232,7 +240,7 @@ function EditorDialog({
             <Label className="mb-2">Live preview</Label>
             <div className="overflow-auto rounded-lg bg-secondary/40 p-3 flex-1">
               <div style={{ transform: "scale(0.62)", transformOrigin: "top left", width: "8.5in" }}>
-                <div className="resume-paper" style={{ width: "8.5in", minHeight: "11in", padding: "0.6in" }} data-rct-tpl={draft.id}>
+                <div className="resume-paper" style={{ width: "8.5in", minHeight: "11in", padding: "0.6in" }} data-rct-tpl={previewKey}>
                   <style>{draft.css}</style>
                   <div dangerouslySetInnerHTML={{ __html: html }} />
                 </div>

@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import {
-  Resumes, Profiles, AdminTemplates as TplStore, emptyResume, newId, FREE_DOWNLOAD_LIMIT,
+  ResumeApi, ProfileApi, AdminTemplatesApi, emptyResume, newId, FREE_DOWNLOAD_LIMIT,
   type Resume, type Experience, type Education, type AdminTemplate,
 } from "@/lib/storage";
 import { generateSummary } from "@/lib/ai";
@@ -33,20 +33,33 @@ export default function ResumeBuilder() {
   const [upgradeReason, setUpgradeReason] = useState<string | undefined>(undefined);
   const [downloading, setDownloading] = useState(false);
 
+  const [loaded, setLoaded] = useState(false);
+
   useEffect(() => {
     if (!user) return;
-    const r = Resumes.get(user.id) ?? emptyResume(user.name, user.email);
-    setResume(r);
-    setPremiumTemplates(TplStore.list());
+    let alive = true;
+    Promise.all([ResumeApi.get(), AdminTemplatesApi.list()])
+      .then(([{ resume: r }, { templates }]) => {
+        if (!alive) return;
+        setResume(r ?? emptyResume(user.name, user.email));
+        setPremiumTemplates(templates);
+        setLoaded(true);
+      })
+      .catch(() => { if (alive) setLoaded(true); });
+    return () => { alive = false; };
   }, [user]);
 
-  // Autosave
+  // Autosave (debounced) — only after initial load
   useEffect(() => {
-    if (user && resume) {
-      const t = setTimeout(() => Resumes.set(user.id, resume), 250);
-      return () => clearTimeout(t);
-    }
-  }, [resume, user]);
+    if (!user || !resume || !loaded) return;
+    const t = setTimeout(() => { ResumeApi.save(resume).catch(() => {}); }, 400);
+    return () => clearTimeout(t);
+  }, [resume, user, loaded]);
+
+  const customTemplate: AdminTemplate | null =
+    resume?.template === "custom" && resume.customTemplateId
+      ? (premiumTemplates.find((t) => t.id === resume.customTemplateId) ?? null)
+      : null;
 
   const isPro = profile?.plan === "pro";
 
@@ -117,8 +130,8 @@ export default function ResumeBuilder() {
         filename: `${(resume.personal.name || "resume").replace(/\s+/g, "_")}.pdf`,
         watermark: isPro ? undefined : "Made with Resume & Career Tools — Free",
       });
-      Profiles.recordDownload(user.id);
-      refresh();
+      await ProfileApi.recordDownload();
+      await refresh();
       toast({ title: "Downloaded", description: "Your resume PDF is saved." });
     } catch (err) {
       toast({ title: "Download failed", description: "Try again or simplify your resume.", variant: "destructive" });
@@ -370,7 +383,7 @@ export default function ResumeBuilder() {
           </div>
           <div className="overflow-auto rounded-xl bg-secondary/50 p-4">
             <div style={{ transform: "scale(0.78)", transformOrigin: "top left", width: "8.5in" }}>
-              <ResumePreview ref={previewRef} resume={resume} />
+              <ResumePreview ref={previewRef} resume={resume} customTemplate={customTemplate} />
             </div>
           </div>
         </div>
