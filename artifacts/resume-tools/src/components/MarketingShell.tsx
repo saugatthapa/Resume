@@ -22,13 +22,7 @@ export function MarketingShell({ children }: { children: ReactNode }) {
   const [, setLocation] = useLocation();
 
   return (
-    <>
-      {PLAUSIBLE_DOMAIN && (
-        <Helmet>
-          <script defer data-domain={PLAUSIBLE_DOMAIN} src="https://plausible.io/js/script.tagged-events.js" />
-        </Helmet>
-      )}
-      <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
       <header className="sticky top-0 z-40 backdrop-blur bg-background/80 border-b border-border">
         <div className="mx-auto max-w-6xl px-5 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center" data-testid="link-home">
@@ -124,7 +118,7 @@ export function MarketingShell({ children }: { children: ReactNode }) {
               <li><Link href="/skills-for-resume-generator" className="hover:text-foreground">Skills Suggestions</Link></li>
             </ul>
           </div>
-          <div>
+<div>
             <h4 className="text-sm font-semibold mb-3">Account</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/pricing" className="hover:text-foreground">Pricing</Link></li>
@@ -142,7 +136,7 @@ export function MarketingShell({ children }: { children: ReactNode }) {
             </div>
           </div>
         </div>
-</footer>
-    </>
+      </footer>
+    </div>
   );
 }
