@@ -47,6 +47,3 @@ Thumbs.db
 # Replit
 .cache/
 .local/
-
-# Vercel frontend build output
-artifacts/resume-tools/public/
