@@ -9,6 +9,7 @@ import { rm } from "node:fs/promises";
 globalThis.require = createRequire(import.meta.url);
 
 const artifactDir = path.dirname(fileURLToPath(import.meta.url));
+const rootDir = path.resolve(artifactDir, "../..");
 
 async function buildAll() {
   const distDir = path.resolve(artifactDir, "dist");
@@ -19,7 +20,7 @@ async function buildAll() {
     platform: "node",
     bundle: true,
     format: "esm",
-    outdir: distDir,
+    outdir: path.resolve(rootDir, "api"),
     outExtension: { ".js": ".mjs" },
     logLevel: "info",
     // Some packages may not be bundleable, so we externalize them, we can add more here as needed.

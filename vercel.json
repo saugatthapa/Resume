@@ -4,14 +4,14 @@
   "buildCommand": "pnpm install --no-frozen-lockfile && pnpm --filter @workspace/resume-tools build && pnpm --filter @workspace/api-server build",
   "outputDirectory": "artifacts/resume-tools/dist/public",
   "installCommand": "echo skipping default install",
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/index"
+      "src": "/api/(.*)",
+      "dest": "/api/index.mjs"
     },
     {
-      "source": "/api",
-      "destination": "/api/index"
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ],
   "crons": [
