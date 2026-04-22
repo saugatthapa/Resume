@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
 import { db } from "./db";
-import { sessionsTable, usersTable } from "@workspace/db/schema";
+import { sessionsTable, usersTable } from "./db/schema";
 import { eq } from "drizzle-orm";
 
 const SESSION_COOKIE = "rct_session";

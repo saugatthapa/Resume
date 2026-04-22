@@ -7,7 +7,7 @@ import { db } from "./db";
 import {
   usersTable, profilesTable, resumesTable, coverLettersTable,
   adminTemplatesTable, paymentsTable, passwordResetTokensTable,
-} from "@workspace/db/schema";
+} from "./db/schema";
 import {
   hashPassword, verifyPassword, createSession, destroySession,
   setSessionCookie, clearSessionCookie, loadUserFromCookie,

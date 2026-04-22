@@ -51,11 +51,60 @@ Most critical gaps have been fixed.
 
 ---
 
-## Deploy Checklist
+## Deploy to Vercel
 
-1. [ ] Set up Resend account + add `RESEND_API_KEY`
-2. [ ] Set up PayPal app + add `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`
-3. [ ] Set up Plausible analytics + add `VITE_PLAUSIBLE_DOMAIN`
-4. [ ] Push schema: `pnpm --filter @workspace/db push`
-5. [ ] Add Vercel cron: daily check for Pro expiration
-6. [ ] Add to footer: actual contact email
+### Step 1: Push to GitHub
+Run this in terminal:
+```bash
+git push origin main
+```
+If the push fails, use GitHub Desktop or VS Code to push.
+
+### Step 2: Create Vercel Project
+1. Go to [vercel.com/new](https://vercel.com/new)
+2. Import your GitHub repo: `saugatthapa/Resume`
+3. Framework: **Vercel** (or None)
+4. Build Command: leave default
+5. Output Directory: `artifacts/resume-tools/dist/public`
+
+### Step 3: Add Environment Variables
+In Vercel project Settings → Environment Variables:
+
+| Key | Value |
+|-----|-------|
+| `DATABASE_URL` | From Vercel Postgres |
+| `PAYPAL_CLIENT_ID` | From PayPal Developer Dashboard |
+| `PAYPAL_CLIENT_SECRET` | From PayPal Developer Dashboard |
+| `PAYPAL_MODE` | `sandbox` (or `live`) |
+| `RESEND_API_KEY` | From Resend.com |
+| `CRON_SECRET` | Generate with: `openssl rand -hex 32` |
+| `APP_URL` | Your Vercel URL (e.g., `https://your-app.vercel.app`) |
+| `VITE_PLAUSIBLE_DOMAIN` | Your Plausible domain (optional) |
+
+### Step 4: Provision Vercel Postgres
+1. Go to Storage → Create Database → Postgres
+2. Copy the `DATABASE_URL` to Vercel env vars
+3. Run schema push in Vercel CLI or connect via pg:
+
+```bash
+vercel env pull .env.local
+pnpm --filter @workspace/db push
+```
+
+### Step 5: Set Up Cron
+The cron is already configured in `vercel.json` to run daily at midnight.
+Vercel will automatically create the cron job on deploy.
+
+### Step 6: Deploy
+Click **Deploy** — Vercel will build and deploy automatically on every push to `main`.
+
+---
+
+## After Deploy Checklist
+
+- [ ] Verify `/api/healthz` returns `{ok: true}`
+- [ ] Sign up and test account creation
+- [ ] Test password reset email (check if Resend works)
+- [ ] Complete a PayPal test payment
+- [ ] Download a PDF resume
+- [ ] Check Vercel Postgres data in dashboard
