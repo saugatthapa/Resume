@@ -87,7 +87,7 @@ function apiUrl(path: string): string {
   return `${base}${path.replace(/^\/+/, "")}`;
 }
 
-async function api<T>(path: string, init?: RequestInit): Promise<T> {
+export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(apiUrl(path), {
     credentials: "include",
     headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
