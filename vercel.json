@@ -1,8 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm install --no-frozen-lockfile && pnpm --filter @workspace/resume-tools build",
+  "buildCommand": "pnpm run vercel-build",
   "outputDirectory": "public",
-  "installCommand": "echo skipping default install",
+  "installCommand": "pnpm install --no-frozen-lockfile",
   "framework": null,
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" },
