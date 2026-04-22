@@ -5,8 +5,8 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "..");
-const sourceDir = path.join(rootDir, "artifacts", "resume-tools", "public");
-const targetDir = path.join(rootDir, "public");
+const sourceDir = path.join(rootDir, "artifacts", "resume-tools", "dist");
+const targetDir = path.join(rootDir, "dist");
 const sourceIndex = path.join(sourceDir, "index.html");
 const targetIndex = path.join(targetDir, "index.html");
 
