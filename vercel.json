@@ -1,23 +1,17 @@
 {
-  "outputDirectory": "artifacts/resume-tools/dist/public",
-  "builds": [
-    {
-      "src": "artifacts/resume-tools/dist/public/**",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "api/index.mjs",
-      "use": "@vercel/node"
-    }
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm install --no-frozen-lockfile && pnpm --filter @workspace/resume-tools build",
+  "outputDirectory": "public",
+  "installCommand": "echo skipping default install",
+  "framework": null,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/api", "destination": "/api/index" }
   ],
-  "routes": [
+  "crons": [
     {
-      "src": "/api/(.*)",
-      "dest": "api/index.mjs"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "artifacts/resume-tools/dist/public/$1"
+      "path": "/api/cron/expire-pro",
+      "schedule": "0 0 * * *"
     }
   ]
 }
