@@ -1,11 +1,12 @@
 import express, { type Express } from "express";
 import cookieParser from "cookie-parser";
+import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { db } from "./db";
 import {
   usersTable, profilesTable, resumesTable, coverLettersTable,
-  adminTemplatesTable, paymentsTable,
+  adminTemplatesTable, paymentsTable, passwordResetTokensTable,
 } from "@workspace/db/schema";
 import {
   hashPassword, verifyPassword, createSession, destroySession,
@@ -14,11 +15,30 @@ import {
 } from "./auth";
 import { createOrder, captureOrder, paypalClientId, paypalMode } from "./paypal";
 import { ensureFreshProfile, EMPTY_RESUME } from "./util";
+import { sendPasswordResetEmail } from "./email";
+import { randomBytes } from "node:crypto";
 
 export function createApp(): Express {
   const app = express();
   app.use(express.json({ limit: "1mb" }));
   app.use(cookieParser());
+
+  const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 200,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use(generalLimiter);
+
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many attempts. Please try again in 15 minutes." },
+  });
+
   app.use(async (req: AuthedRequest, _res, next) => {
     try { await loadUserFromCookie(req); } catch (e) { console.error("auth load error", e); }
     next();
@@ -30,7 +50,7 @@ export function createApp(): Express {
     email: z.string().email(),
     password: z.string().min(6),
   });
-  app.post("/api/auth/signup", async (req, res) => {
+  app.post("/api/auth/signup", authLimiter, async (req, res) => {
     const parsed = signupSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
     const { name, email, password } = parsed.data;
@@ -48,7 +68,7 @@ export function createApp(): Express {
     res.json({ user: publicUser(user) });
   });
 
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", authLimiter, async (req, res) => {
     const parsed = z.object({ email: z.string().email(), password: z.string().min(1) }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: "Invalid input" });
     const rows = await db.select().from(usersTable).where(eq(usersTable.email, parsed.data.email.toLowerCase())).limit(1);
@@ -208,6 +228,55 @@ export function createApp(): Express {
   });
 
   app.get("/api/healthz", (_req, res) => res.json({ ok: true }));
+
+  // ---------- PASSWORD RESET ----------
+  app.post("/api/auth/forgot-password", authLimiter, async (req, res) => {
+    const email = String(req.body?.email ?? "").toLowerCase().trim();
+    if (!email) return res.status(400).json({ error: "Email is required" });
+    const rows = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
+    if (!rows[0]) {
+      return res.json({ ok: true });
+    }
+    const token = randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60);
+    await db.insert(passwordResetTokensTable).values({ token, userId: rows[0].id, expiresAt });
+    await sendPasswordResetEmail(email, token);
+    res.json({ ok: true });
+  });
+
+  app.post("/api/auth/reset-password", async (req, res) => {
+    const { token, password } = req.body ?? {};
+    if (!token || typeof token !== "string") return res.status(400).json({ error: "Token is required" });
+    if (!password || typeof password !== "string" || password.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    }
+    const rows = await db.select().from(passwordResetTokensTable).where(eq(passwordResetTokensTable.token, token)).limit(1);
+    const record = rows[0];
+    if (!record) return res.status(400).json({ error: "Invalid token" });
+    if (record.expiresAt.getTime() < Date.now()) return res.status(400).json({ error: "Token expired" });
+    if (record.usedAt) return res.status(400).json({ error: "Token already used" });
+    await db.update(passwordResetTokensTable).set({ usedAt: new Date() }).where(eq(passwordResetTokensTable.token, token));
+    const passwordHash = await hashPassword(password);
+    await db.update(usersTable).set({ passwordHash }).where(eq(usersTable.id, record.userId));
+    res.json({ ok: true });
+  });
+
+  // ---------- CRON: Expire Pro subscriptions ----------
+  app.post("/api/cron/expire-pro", async (_req, res) => {
+    if (process.env.CRON_SECRET && _req.headers["authorization"] !== `Bearer ${process.env.CRON_SECRET}`) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    const now = new Date();
+    const rows = await db.select().from(profilesTable).where(eq(profilesTable.plan, "pro"));
+    let count = 0;
+    for (const p of rows) {
+      if (p.proUntil && new Date(p.proUntil).getTime() < now.getTime()) {
+        await db.update(profilesTable).set({ plan: "free", proUntil: null }).where(eq(profilesTable.userId, p.userId));
+        count++;
+      }
+    }
+    res.json({ ok: true, expired: count });
+  });
 
   return app;
 }

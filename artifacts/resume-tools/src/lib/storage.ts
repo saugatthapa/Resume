@@ -110,6 +110,7 @@ export const Auth = {
   logout: () => api<{ ok: true }>("/api/auth/logout", { method: "POST" }),
   me: () => api<{ user: User | null; profile: Profile | null }>("/api/auth/me"),
   toggleAdmin: () => api<{ user: User }>("/api/profile/toggle-admin", { method: "POST" }),
+  forgotPassword: (email: string) => api<{ ok: true }>("/api/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
 };
 
 export const ProfileApi = {

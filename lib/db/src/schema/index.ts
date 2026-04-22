@@ -60,6 +60,14 @@ export const paymentsTable = pgTable("payments", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const passwordResetTokensTable = pgTable("password_reset_tokens", {
+  token: text("token").primaryKey(),
+  userId: uuid("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type User = typeof usersTable.$inferSelect;
 export type AdminTemplate = typeof adminTemplatesTable.$inferSelect;
 export type Profile = typeof profilesTable.$inferSelect;

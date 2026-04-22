@@ -15,6 +15,10 @@ import CoverLetter from "@/pages/CoverLetter";
 import AITools from "@/pages/AITools";
 import Settings from "@/pages/Settings";
 import AdminTemplatesPage from "@/pages/AdminTemplates";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import TermsOfService from "@/pages/TermsOfService";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import SummarySeo from "@/pages/seo/SummarySeo";
 import CoverLetterSeo from "@/pages/seo/CoverLetterSeo";
 import HeadlineSeo from "@/pages/seo/HeadlineSeo";
@@ -39,6 +43,10 @@ function Router() {
       <Route path="/dashboard/ai-tools" component={AITools} />
       <Route path="/dashboard/settings" component={Settings} />
       <Route path="/admin/templates" component={AdminTemplatesPage} />
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/terms-of-service" component={TermsOfService} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route component={NotFound} />
     </Switch>
   );

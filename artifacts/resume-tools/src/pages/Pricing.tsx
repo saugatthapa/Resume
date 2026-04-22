@@ -57,8 +57,10 @@ export default function Pricing() {
             </div>
           </div>
 
-          <p className="text-center text-sm text-muted-foreground mt-6">
-            This is a demo product. Upgrades are simulated — no real payments are processed.
+          <p className="text-center text-xs text-muted-foreground mt-6">
+            <Link href="/terms-of-service" className="underline hover:text-foreground">Terms of Service</Link>
+            {" · "}
+            <Link href="/privacy-policy" className="underline hover:text-foreground">Privacy Policy</Link>
           </p>
         </div>
       </section>

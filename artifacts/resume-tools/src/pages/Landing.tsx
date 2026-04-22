@@ -17,9 +17,6 @@ export default function Landing() {
       <section className="bg-grain">
         <div className="mx-auto max-w-6xl px-5 py-20 md:py-28 grid md:grid-cols-2 gap-12 items-center">
           <div>
-            <Badge variant="outline" className="mb-5 bg-background/70">
-              <Sparkles className="h-3 w-3 mr-1" /> Trusted by 12,000+ job seekers
-            </Badge>
             <h1 className="font-serif text-5xl md:text-6xl font-semibold tracking-tight leading-[1.05]">
               Build a resume you'll actually be <span className="text-accent">proud</span> to send.
             </h1>
@@ -38,14 +35,6 @@ export default function Landing() {
                   See pricing
                 </Button>
               </Link>
-            </div>
-            <div className="mt-6 flex items-center gap-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-3.5 w-3.5 fill-accent text-accent" />
-                ))}
-              </div>
-              <span>4.9 / 5 from over 2,400 reviews</span>
             </div>
           </div>
           <div className="relative">

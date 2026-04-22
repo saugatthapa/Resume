@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { useState, type ReactNode } from "react";
 import { Menu, X } from "lucide-react";
+import { Helmet } from "react-helmet-async";
+
+const PLAUSIBLE_DOMAIN = import.meta.env.VITE_PLAUSIBLE_DOMAIN;
 
 const NAV = [
   { href: "/pricing", label: "Pricing" },
@@ -19,7 +22,13 @@ export function MarketingShell({ children }: { children: ReactNode }) {
   const [, setLocation] = useLocation();
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <>
+      {PLAUSIBLE_DOMAIN && (
+        <Helmet>
+          <script defer data-domain={PLAUSIBLE_DOMAIN} src="https://plausible.io/js/script.tagged-events.js" />
+        </Helmet>
+      )}
+      <div className="min-h-screen bg-background text-foreground flex flex-col">
       <header className="sticky top-0 z-40 backdrop-blur bg-background/80 border-b border-border">
         <div className="mx-auto max-w-6xl px-5 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center" data-testid="link-home">
@@ -125,12 +134,15 @@ export function MarketingShell({ children }: { children: ReactNode }) {
           </div>
         </div>
         <div className="border-t border-border">
-          <div className="mx-auto max-w-6xl px-5 py-4 text-xs text-muted-foreground flex justify-between">
+          <div className="mx-auto max-w-6xl px-5 py-4 text-xs text-muted-foreground flex flex-col sm:flex-row justify-between gap-2">
             <span>© {new Date().getFullYear()} Resume & Career Tools</span>
-            <span>Made with care for job seekers everywhere.</span>
+            <div className="flex gap-4">
+              <Link href="/privacy-policy" className="hover:text-foreground">Privacy Policy</Link>
+              <Link href="/terms-of-service" className="hover:text-foreground">Terms of Service</Link>
+            </div>
           </div>
         </div>
-      </footer>
-    </div>
+</footer>
+    </>
   );
 }

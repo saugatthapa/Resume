@@ -1,11 +1,26 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm install --no-frozen-lockfile && pnpm --filter @workspace/db push && pnpm --filter @workspace/resume-tools build",
+  "buildCommand": "pnpm install --no-frozen-lockfile && pnpm --filter @workspace/resume-tools build",
   "outputDirectory": "artifacts/resume-tools/dist/public",
   "installCommand": "echo skipping default install",
   "framework": null,
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" },
     { "source": "/api", "destination": "/api/index" }
-  ]
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/expire-pro",
+      "schedule": "0 0 * * *"
+    }
+  ],
+  "env": {
+    "DATABASE_URL": "@database-url",
+    "PAYPAL_CLIENT_ID": "@paypal-client-id",
+    "PAYPAL_CLIENT_SECRET": "@paypal-client-secret",
+    "PAYPAL_MODE": "sandbox",
+    "RESEND_API_KEY": "@resend-api-key",
+    "CRON_SECRET": "@cron-secret",
+    "APP_URL": "@app-url"
+  }
 }
