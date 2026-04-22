@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm install --no-frozen-lockfile && pnpm --filter @workspace/resume-tools build && rm -rf public && mkdir -p public && cp -R artifacts/resume-tools/dist/public/. public/",
+  "buildCommand": "pnpm install --no-frozen-lockfile && pnpm --filter @workspace/resume-tools build && SRC=$(if [ -d artifacts/resume-tools/dist/public ]; then printf artifacts/resume-tools/dist/public; else printf dist/public; fi) && rm -rf public && mkdir -p public && cp -R \"$SRC\"/. public/",
   "outputDirectory": "public",
   "installCommand": "echo skipping default install",
   "framework": null,
